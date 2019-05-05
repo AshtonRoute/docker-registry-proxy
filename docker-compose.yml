@@ -1,0 +1,13 @@
+version: '2.4'
+services:
+  proxy:
+    image: ${DOCKER_IMAGE}
+    environment:
+      REGISTRIES: ${REGISTRIES}
+      AUTH_REGISTRIES: ${AUTH_REGISTRIES}
+    volumes:
+    - ./create_ca_cert.sh:/create_ca_cert.sh:ro
+    - ./entrypoint.sh:/entrypoint.sh:ro
+    - ./nginx.tmpl.conf:/etc/nginx/nginx.tmpl.conf:ro
+    ports:
+    - 3128:3128

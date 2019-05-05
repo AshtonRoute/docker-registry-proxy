@@ -8,11 +8,11 @@ RUN apk add --update openssl bash ca-certificates su-exec git g++ libffi libffi-
 RUN LDFLAGS=-L/lib pip3 install mitmproxy
 RUN apk del --purge git g++ libffi-dev openssl-dev python3-dev && rm -rf /var/cache/apk/* && rm -rf ~/.cache/pip
 
+# template gen
+COPY --from=hairyhenderson/gomplate:v3.3.1 /gomplate /usr/local/bin/
+
 # Required for mitmproxy
 ENV LANG=en_US.UTF-8
-
-# Check the installed mitmproxy version
-RUN mitmproxy --version
 
 # Create the cache directory and CA directory
 RUN mkdir -p /docker_mirror_cache /ca
@@ -25,11 +25,10 @@ VOLUME /docker_mirror_cache
 VOLUME /ca
 
 # Add our configuration
-ADD nginx.conf /etc/nginx/nginx.conf
+COPY nginx.tmpl.conf /etc/nginx/nginx.tmpl.conf
 
 # Add our very hackish entrypoint and ca-building scripts, make them executable
-ADD entrypoint.sh /entrypoint.sh
-ADD create_ca_cert.sh /create_ca_cert.sh
+COPY create_ca_cert.sh entrypoint.sh /
 RUN chmod +x /create_ca_cert.sh /entrypoint.sh
 
 # Clients should only use 3128, not anything else.

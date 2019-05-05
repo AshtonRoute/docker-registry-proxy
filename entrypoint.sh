@@ -1,16 +1,21 @@
-#! /bin/bash
+#!/bin/bash -e
 
 set -Eeuo pipefail
 trap "echo TRAPed signal" HUP INT QUIT TERM
 
-#configure nginx DNS settings to match host, why must we do that nginx?
-conf="resolver $(/usr/bin/awk 'BEGIN{ORS=" "} $1=="nameserver" {print $2}' /etc/resolv.conf) ipv6=off; # Avoid ipv6 addresses for now"
-[ "$conf" = "resolver ;" ] && echo "no nameservers found" && exit 0
-confpath=/etc/nginx/resolvers.conf
-if [ ! -e $confpath ] || [ "$conf" != "$(cat $confpath)" ]
-then
-    echo "$conf" > $confpath
+templatesSearchPath='/etc/nginx'
+
+# Compute the DNS resolvers for use in the templates - if the IP contains ":", it's IPv6 and must be enclosed in []
+export RESOLVERS=$(awk '$1 == "nameserver" {print ($2 ~ ":")? "["$2"]": $2}' ORS=' ' /etc/resolv.conf | sed 's/ *$//g')
+if [[ "x$RESOLVERS" = "x" ]]; then
+    echo "Warning: unable to determine DNS resolvers for nginx" >&2
+    unset RESOLVERS
 fi
+
+CACHE_SIZE=${CACHE_SIZE:-1000g}
+CACHE_DURATION=${CACHE_DURATION:-1y}
+
+export CACHE_SIZE CACHE_DURATION
 
 # The list of SAN (Subject Alternative Names) for which we will create a TLS certificate.
 ALLDOMAINS=""
@@ -60,6 +65,8 @@ fi
 # create default config for the caching layer to listen on 443.
 echo "        listen 443 ssl default_server;" > /etc/nginx/caching.layer.listen
 echo "error_log  /var/log/nginx/error.log warn;" > /etc/nginx/error.log.debug.warn
+
+gomplate '-f' '/etc/nginx/nginx.tmpl.conf' -d "configs=${templatesSearchPath}/" -o '/etc/nginx/nginx.conf'
 
 # normally use non-debug version of nginx
 NGINX_BIN="nginx"
