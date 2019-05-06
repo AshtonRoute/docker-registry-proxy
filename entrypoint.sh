@@ -41,9 +41,9 @@ echo -n "" > /etc/nginx/docker.auth.map
 
 for ONEREGISTRYIN in ${AUTH_REGISTRIES}; do
     ONEREGISTRY=$(echo -n ${ONEREGISTRYIN} | xargs) # Remove whitespace
-    AUTH_HOST=$(echo -n ${ONEREGISTRY} | cut -d ":" -f 1 | xargs)
-    AUTH_USER=$(echo -n ${ONEREGISTRY} | cut -d ":" -f 2 | xargs)
-    AUTH_PASS=$(echo -n ${ONEREGISTRY} | cut -d ":" -f 3 | xargs)
+    AUTH_HOST=$(echo -n ${ONEREGISTRY} | cut -d "," -f 1 | xargs)
+    AUTH_USER=$(echo -n ${ONEREGISTRY} | cut -d "," -f 2 | xargs)
+    AUTH_PASS=$(echo -n ${ONEREGISTRY} | cut -d "," -f 3 | xargs)
     AUTH_BASE64=$(echo -n ${AUTH_USER}:${AUTH_PASS} | base64 | xargs)
     echo "Adding Auth for registry '${AUTH_HOST}' with user '${AUTH_USER}'."
     echo "\"${AUTH_HOST}\" \"${AUTH_BASE64}\";" >> /etc/nginx/docker.auth.map
